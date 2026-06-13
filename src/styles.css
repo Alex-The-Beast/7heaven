@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Plus Jakarta Sans", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --color-primary: #F38020;
+  --color-primary-dark: #C85F08;
+  --color-accent: #F97316;
+  --color-bg: #F8FAF8;
+  --color-surface: #FFFFFF;
+  --color-ink: #1A1A1A;
+  --color-muted: #6B7280;
+  --color-line: #E5EAE5;
+  --color-danger: #EF4444;
+  --color-warning: #F59E0B;
+  --color-success: #10B981;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #f8faf8;
+  color: #1a1a1a;
+  font-family: var(--font-body);
+}
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.shadow-card { box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+.shadow-float { box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
+.glass { background: rgba(255,255,255,0.82); backdrop-filter: blur(18px); }
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  color: var(--color-primary-dark);
+  text-decoration: none;
+}
+.brand-logo-mark {
+  display: grid;
+  width: 2.15rem;
+  height: 2.15rem;
+  place-items: center;
+  border-radius: 0.8rem;
+  background: linear-gradient(135deg, #ff9d2f 0%, #f38020 48%, #c85f08 100%);
+  color: white;
+  font-family: var(--font-display);
+  font-size: 1.28rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 8px 20px rgba(200, 95, 8, 0.22);
+}
+.brand-logo-text {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0;
+  color: #b85106;
+}
+.shimmer {
+  background: linear-gradient(90deg, #eef3ee 25%, #f8fff8 37%, #eef3ee 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.2s infinite;
+}
+.mb-5.inline-flex.items-center.gap-2.rounded-full.bg-white\/18.px-4.py-2.text-sm.font-bold.backdrop-blur { display: none; }
+@keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
