@@ -31,6 +31,13 @@ const chartData = [
   { day: 'Sun', revenue: 99000, orders: 242 },
 ];
 const page = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -16 } };
+const imageFallback = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22500%22 height=%22500%22 viewBox=%220 0 500 500%22%3E%3Crect width=%22500%22 height=%22500%22 rx=%2232%22 fill=%22%23fff7ed%22/%3E%3Ccircle cx=%22250%22 cy=%22218%22 r=%2278%22 fill=%22%23F38020%22 opacity=%220.18%22/%3E%3Cpath d=%22M160 322h180l-22 64H182z%22 fill=%22%23F38020%22 opacity=%220.35%22/%3E%3Cpath d=%22M202 164h96l18 158H184z%22 fill=%22%23F38020%22 opacity=%220.72%22/%3E%3Ctext x=%22250%22 y=%22432%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2230%22 font-weight=%22700%22 fill=%22%23C85F08%22%3E7Heaven%3C/text%3E%3C/svg%3E';
+
+function handleImageError(event) {
+  if (event.currentTarget.src !== imageFallback) {
+    event.currentTarget.src = imageFallback;
+  }
+}
 
 function formatPrice(value) {
   return `Rs ${value.toLocaleString('en-IN')}`;
@@ -51,8 +58,12 @@ function Toast() {
 
 function Navbar() {
   const { cartCount, setCartOpen } = useCart();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [loginOpen, setLoginOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const accountRef = useRef(null);
   const [user, setUser] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('sevenHeavenUser') || 'null');
@@ -71,6 +82,16 @@ function Navbar() {
     window.addEventListener('sevenHeavenAuthChanged', syncUser);
     return () => window.removeEventListener('sevenHeavenAuthChanged', syncUser);
   }, []);
+  useEffect(() => {
+    if (!accountOpen) return undefined;
+    const closeOnOutsideClick = (event) => {
+      if (accountRef.current && !accountRef.current.contains(event.target)) {
+        setAccountOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    return () => document.removeEventListener('pointerdown', closeOnOutsideClick);
+  }, [accountOpen]);
   const handleLogin = (mobile) => {
     const nextUser = { mobile };
     localStorage.setItem('sevenHeavenUser', JSON.stringify(nextUser));
@@ -84,6 +105,16 @@ function Navbar() {
     window.dispatchEvent(new Event('sevenHeavenAuthChanged'));
     setAccountOpen(false);
   };
+  const submitSearch = (event) => {
+    event.preventDefault();
+    const query = searchTerm.trim();
+    if (!query) return;
+    navigate(`/products?q=${encodeURIComponent(query)}`);
+  };
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    setSearchTerm(location.pathname === '/products' ? params.get('q') || '' : '');
+  }, [location.pathname, location.search]);
   return (
     <>
     <header className="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur-xl">
@@ -101,12 +132,12 @@ function Navbar() {
             Home <span className="truncate  text-muted">- Patna, Bihar, Boring Road...</span> <ChevronDown size={13} className="shrink-0" />
           </button>
         </div>
-        <div className="relative min-w-0 flex-1">
+        <form onSubmit={submitSearch} className="relative min-w-0 flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#30323d]" size={20} />
-          <input className="h-12 w-full rounded-xl border border-[#dfe3ea] bg-white py-3 pl-12 pr-4 text-sm font-medium text-ink outline-none transition placeholder:text-[#3d4252] focus:border-primary focus:ring-4 focus:ring-primary/10" placeholder='Search for "cheese slices"' />
-        </div>
+          <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="h-12 w-full rounded-xl border border-[#dfe3ea] bg-white py-3 pl-12 pr-4 text-sm font-medium text-ink outline-none transition placeholder:text-[#3d4252] focus:border-primary focus:ring-4 focus:ring-primary/10" placeholder='Search for "cheese slices"' />
+        </form>
           {user ? (
-            <div className="relative block">
+            <div ref={accountRef} className="relative block">
               <button onClick={() => setAccountOpen((value) => !value)} className="flex min-w-10 flex-col items-center gap-1 text-xs font-semibold text-ink transition sm:min-w-14" title={user.mobile}>
                 <User size={23} strokeWidth={2.1} />
                 <span className="hidden sm:block">Profile</span>
@@ -238,7 +269,7 @@ function HeroBanner() {
             </div>
           </motion.div>
         </AnimatePresence>
-        <div className="absolute bottom-6 left-6 z-10 flex gap-2 md:left-16">
+        <div className="absolute bottom-6 left-6 z-10 hidden gap-2 sm:flex md:left-16">
           {slides.map((_, index) => <button aria-label={`Show slide ${index + 1}`} key={index} onClick={() => setActive(index)} className={`h-2 rounded-full transition-all ${index === active ? 'w-10 bg-accent' : 'w-2 bg-white/55'}`} />)}
         </div>
       </div>
@@ -287,7 +318,7 @@ function MegaCategoryGrid({ active, setActive }) {
             className={`group text-center transition ${active === item.category ? 'scale-[1.02]' : ''}`}
           >
             <div className={`mx-auto grid aspect-square w-full max-w-28 place-items-center overflow-hidden rounded-2xl bg-[#f1f7ff] p-2 transition group-hover:-translate-y-1 group-hover:shadow-card ${active === item.category ? 'ring-2 ring-primary' : ''}`}>
-              <img src={item.image} alt="" className="h-full w-full rounded-xl object-cover mix-blend-multiply transition duration-300 group-hover:scale-110" />
+              <img src={item.image || imageFallback} alt="" onError={handleImageError} className="h-full w-full rounded-xl object-cover mix-blend-multiply transition duration-300 group-hover:scale-110" />
             </div>
             <div className="mx-auto mt-3 max-w-28 text-sm font-semibold leading-5 text-[#3f3f46]">{item.label}</div>
           </motion.button>
@@ -334,7 +365,7 @@ function ProductCard({ product }) {
       {product.discount > 12 && <div className="absolute right-3 top-3 z-10 rounded-full bg-accent px-2.5 py-1 font-mono text-xs font-bold text-white">{product.discount}% OFF</div>}
       <Link to={`/product/${product.id}`} className="block">
         <div className="h-40 overflow-hidden bg-bg">
-          <img src={product.image} alt={product.name} className={`h-full w-full object-cover transition duration-500 group-hover:scale-110 ${product.stock <= 0 ? 'grayscale' : ''}`} />
+          <img src={product.image || imageFallback} alt={product.name} onError={handleImageError} className={`h-full w-full object-cover transition duration-500 group-hover:scale-110 ${product.stock <= 0 ? 'grayscale' : ''}`} />
         </div>
       </Link>
       <div className="p-4">
@@ -374,7 +405,7 @@ function ShelfProductCard({ product }) {
     <article className="group flex h-[330px] w-[202px] shrink-0 flex-col rounded-xl border border-line bg-white p-3 shadow-[0_1px_8px_rgba(16,24,40,0.06)] transition hover:-translate-y-0.5 hover:shadow-card">
       <Link to={`/product/${product.id}`} className="block">
         <div className="grid h-36 place-items-center rounded-lg bg-white">
-          <img src={product.image} alt={product.name} className="max-h-32 w-full object-contain transition duration-300 group-hover:scale-105" />
+          <img src={product.image || imageFallback} alt={product.name} onError={handleImageError} className="max-h-32 w-full object-contain transition duration-300 group-hover:scale-105" />
         </div>
         <div className="mt-2 inline-flex w-max items-center gap-1 rounded-md bg-bg px-1.5 py-1 text-[10px] font-bold text-ink">
           <Clock size={11} className="text-primary" /> 12 MINS
@@ -466,6 +497,13 @@ function ProductGrid({ products, title = 'All Groceries' }) {
           <option value="discount">Discount</option>
         </select>
       </div>
+      {sorted.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-line bg-white p-8 text-center shadow-card">
+          <div className="mx-auto grid size-14 place-items-center rounded-full bg-orange-50 text-primary"><Search size={24} /></div>
+          <h3 className="mt-4 font-display text-lg font-bold text-ink">No products found</h3>
+          <p className="mt-2 text-sm text-muted">Try searching milk, atta, rice, snacks, oil, fruits, or household essentials.</p>
+        </div>
+      )}
       <motion.div initial="initial" animate="animate" variants={{ animate: { transition: { staggerChildren: 0.05 } } }} className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
         {sorted.map((product) => <motion.div key={product.id} variants={{ initial: { opacity: 0, y: 18 }, animate: { opacity: 1, y: 0 } }}><ProductCard product={product} /></motion.div>)}
       </motion.div>
@@ -478,30 +516,30 @@ function CategoryListingCard({ product }) {
   const item = cartItems.find((entry) => entry.id === product.id);
   return (
     <article className="group min-w-0">
-      <Link to={`/product/${product.id}`} className="relative grid h-44 place-items-center overflow-hidden rounded-xl border border-line bg-white p-4 transition group-hover:shadow-card">
-        {product.discount > 10 && <span className="absolute left-3 top-0 rounded-b-md bg-blue-600 px-2 py-1 text-[10px] font-extrabold leading-3 text-white">{product.discount}%<br />OFF</span>}
-        <img src={product.image} alt={product.name} className="max-h-36 w-full object-contain transition duration-300 group-hover:scale-105" />
+      <Link to={`/product/${product.id}`} className="relative grid h-32 place-items-center overflow-hidden rounded-xl border border-line bg-white p-3 transition group-hover:shadow-card sm:h-44 sm:p-4">
+        {product.discount > 10 && <span className="absolute left-2 top-0 rounded-b-md bg-blue-600 px-1.5 py-1 text-[9px] font-extrabold leading-3 text-white sm:left-3 sm:px-2 sm:text-[10px]">{product.discount}%<br />OFF</span>}
+          <img src={product.image || imageFallback} alt={product.name} onError={handleImageError} className="max-h-24 w-auto max-w-[78%] object-contain transition duration-300 group-hover:scale-105 sm:max-h-36 sm:max-w-[86%]" />
       </Link>
-      <div className="mt-3 flex items-start justify-between gap-3">
-        <div>
-          <div className="inline-flex rounded-md bg-primary px-2 py-1 font-mono text-base font-extrabold text-white">{formatPrice(product.price)}</div>
-          <span className="ml-2 font-mono text-sm text-muted line-through">{formatPrice(product.mrp)}</span>
-          <div className="mt-1 text-xs font-extrabold text-green-700">Rs {Math.max(0, product.mrp - product.price)} OFF</div>
+      <div className="mt-2 flex items-start justify-between gap-2 sm:mt-3 sm:gap-3">
+        <div className="min-w-0">
+          <div className="inline-flex rounded-md bg-primary px-1.5 py-1 font-mono text-sm font-extrabold text-white sm:px-2 sm:text-base">{formatPrice(product.price)}</div>
+          <span className="ml-1 font-mono text-xs text-muted line-through sm:ml-2 sm:text-sm">{formatPrice(product.mrp)}</span>
+          <div className="mt-1 text-[11px] font-bold text-green-700 sm:text-xs sm:font-extrabold">Rs {Math.max(0, product.mrp - product.price)} OFF</div>
         </div>
         {item ? (
-          <div className="flex h-10 shrink-0 items-center rounded-lg bg-primary text-white">
+          <div className="flex h-8 shrink-0 items-center rounded-lg bg-primary text-white sm:h-10">
             <button onClick={() => updateQuantity(product.id, item.qty - 1)} className="px-2"><Minus size={14} /></button>
-            <span className="w-6 text-center font-mono text-sm font-bold">{item.qty}</span>
+            <span className="w-5 text-center font-mono text-xs font-bold sm:w-6 sm:text-sm">{item.qty}</span>
             <button onClick={() => updateQuantity(product.id, item.qty + 1)} className="px-2"><Plus size={14} /></button>
           </div>
         ) : (
-          <button onClick={() => addToCart(product)} disabled={product.stock <= 0} className="h-10 shrink-0 rounded-lg border border-pink-500 bg-white px-4 text-sm font-extrabold text-pink-600 transition hover:bg-pink-50 disabled:border-gray-300 disabled:text-gray-400">ADD</button>
+          <button onClick={() => addToCart(product)} disabled={product.stock <= 0} className="h-8 shrink-0 rounded-lg border border-pink-500 bg-white px-3 text-xs font-extrabold text-pink-600 transition hover:bg-pink-50 disabled:border-gray-300 disabled:text-gray-400 sm:h-10 sm:px-4 sm:text-sm">ADD</button>
         )}
       </div>
       <Link to={`/product/${product.id}`} className="mt-3 block">
-        <h3 className="min-h-10 text-sm font-bold leading-5 text-ink line-clamp-2 hover:text-primary">{product.name}</h3>
-        <p className="mt-1 text-sm text-muted">1 pack ({product.unit})</p>
-        <span className="mt-2 inline-block bg-cyan-50 px-2 py-0.5 text-xs font-semibold text-cyan-700">{product.category === 'grains' ? 'High Fiber' : 'Fresh Pick'}</span>
+        <h3 className="min-h-9 text-xs font-bold leading-4 text-ink line-clamp-2 hover:text-primary sm:min-h-10 sm:text-sm sm:leading-5">{product.name}</h3>
+        <p className="mt-1 text-xs text-muted sm:text-sm">1 pack ({product.unit})</p>
+        <span className="mt-2 inline-block bg-cyan-50 px-2 py-0.5 text-[10px] font-semibold text-cyan-700 sm:text-xs">{product.category === 'grains' ? 'High Fiber' : 'Fresh Pick'}</span>
         <div className="mt-2 flex items-center gap-1 text-xs font-semibold text-green-700"><Star size={13} className="fill-green-600 text-green-600" /> {product.rating} ({product.ratingCount})</div>
       </Link>
     </article>
@@ -510,6 +548,7 @@ function CategoryListingCard({ product }) {
 
 function CategoryListingPage() {
   const { category } = useParams();
+  const navigate = useNavigate();
   const { products: adminProducts } = useAdmin();
   const [active, setActive] = useState(category || 'all');
   const [activeLabel, setActiveLabel] = useState('');
@@ -525,12 +564,12 @@ function CategoryListingPage() {
   return (
     <motion.main variants={page} initial="initial" animate="animate" exit="exit" className="bg-white">
       <section className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
-        <div className="mb-7 flex items-center gap-3 text-sm font-medium text-muted">
-          <Link to="/" className="text-[#33415c] hover:text-primary">Home</Link>
+        <div className="mb-5 flex min-w-0 items-center gap-2 overflow-hidden text-xs font-medium text-muted sm:mb-7 sm:gap-3 sm:text-sm">
+          <Link to="/" className="shrink-0 text-[#33415c] hover:text-primary">Home</Link>
           <ChevronRight size={16} />
-          <span>{activeMeta?.label || 'Groceries'}</span>
+          <span className="truncate">{activeMeta?.label || 'Groceries'}</span>
           <ChevronRight size={16} />
-          <span className="font-bold text-ink">{active === 'grains' ? 'Millets & Other Flours' : activeMeta?.label}</span>
+          <span className="truncate font-bold text-ink">{active === 'grains' ? 'Millets & Other Flours' : activeMeta?.label}</span>
         </div>
         <div className="grid gap-8 lg:grid-cols-[285px_1fr]">
           <aside className="hidden border-r border-line lg:block">
@@ -541,14 +580,26 @@ function CategoryListingPage() {
                   onClick={() => { setActive(item.category); setActiveLabel(item.label); }}
                   className={`flex w-full items-center gap-5 px-6 py-4 text-left transition ${activeLabel === item.label ? 'border-l-2 border-primary bg-orange-50 text-primary' : 'text-[#596174] hover:bg-bg'}`}
                 >
-                  <img src={item.image} alt="" className="size-10 rounded-lg object-cover" />
+                  <img src={item.image || imageFallback} alt="" onError={handleImageError} className="size-10 rounded-lg object-cover" />
                   <span className="truncate text-sm font-semibold">{item.category === 'grains' && active === item.category ? 'Millets & Other...' : item.label}</span>
                 </button>
               ))}
             </div>
           </aside>
           <div>
-            <h1 className="font-display text-2xl font-extrabold tracking-tight text-ink md:text-3xl">
+            <div className="no-scrollbar -mx-4 mb-4 flex gap-2 overflow-x-auto px-4 lg:hidden">
+              {megaCategories.slice(1, 18).map((item) => (
+                <button
+                  key={`mobile-${item.label}-${item.category}`}
+                  onClick={() => { setActive(item.category); setActiveLabel(item.label); navigate(`/category/${item.category}`); }}
+                  className={`flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold ${activeLabel === item.label || active === item.category ? 'border-primary bg-orange-50 text-primary' : 'border-line bg-white text-[#596174]'}`}
+                >
+                  <img src={item.image || imageFallback} alt="" onError={handleImageError} className="size-7 rounded-full object-cover" />
+                  <span className="max-w-28 truncate">{item.label}</span>
+                </button>
+              ))}
+            </div>
+            <h1 className="font-display text-xl font-extrabold tracking-tight text-ink sm:text-2xl md:text-3xl">
               Buy {active === 'grains' ? 'Millets & Other Flours' : activeMeta?.label} Online
             </h1>
             <div className="no-scrollbar mt-5 flex gap-2 overflow-x-auto pb-1">
@@ -559,7 +610,7 @@ function CategoryListingPage() {
                 </button>
               ))}
             </div>
-            <div className="mt-8 grid grid-cols-2 gap-x-5 gap-y-9 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+            <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-7 sm:mt-8 sm:gap-x-5 sm:gap-y-9 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               {products.map((product) => <CategoryListingCard key={product.id} product={product} />)}
             </div>
           </div>
@@ -606,31 +657,31 @@ function ProductDetailPage() {
   const similar = adminProducts.filter((item) => item.category === product.category && item.id !== product.id).slice(0, 10);
   const peopleAlsoBought = adminProducts.filter((item) => item.category !== product.category).sort((a, b) => b.popularity - a.popularity).slice(0, 10);
   const gallery = [
-    product.image,
-    ...adminProducts.filter((item) => item.category === product.category && item.id !== product.id).slice(0, 4).map((item) => item.image),
+    product.image || imageFallback,
+    ...adminProducts.filter((item) => item.category === product.category && item.id !== product.id).slice(0, 4).map((item) => item.image || imageFallback),
   ];
 
   return (
     <motion.main variants={page} initial="initial" animate="animate" exit="exit">
-      <section className="mx-auto grid max-w-7xl border-b border-line px-4 py-8 lg:grid-cols-[1.03fr_1fr] lg:px-6">
+      <section className="mx-auto grid max-w-7xl border-b border-line px-4 py-4 sm:py-8 lg:grid-cols-[1.03fr_1fr] lg:px-6">
         <div className="border-line lg:border-r lg:pr-10">
-          <div className="grid min-h-[420px] place-items-center rounded-2xl bg-[#fbf4d7] p-8 md:min-h-[560px]">
-            <img src={gallery[activeImage]} alt={product.name} className="max-h-[480px] w-full object-contain" />
+          <div className="grid min-h-[260px] place-items-center rounded-2xl bg-[#fbf4d7] p-5 sm:min-h-[420px] sm:p-8 md:min-h-[560px]">
+            <img src={gallery[activeImage]} alt={product.name} onError={handleImageError} className="max-h-[230px] w-full object-contain sm:max-h-[480px]" />
           </div>
-          <div className="relative mt-4 flex items-center gap-3">
-            <div className="no-scrollbar flex gap-3 overflow-x-auto pr-14">
+          <div className="relative mt-3 flex items-center gap-2 sm:mt-4 sm:gap-3">
+            <div className="no-scrollbar flex gap-2 overflow-x-auto pr-11 sm:gap-3 sm:pr-14">
               {gallery.map((image, index) => (
-                <button key={image} onClick={() => setActiveImage(index)} className={`grid size-20 shrink-0 place-items-center rounded-xl border bg-[#fbf4d7] p-1 transition ${activeImage === index ? 'border-primary ring-1 ring-primary' : 'border-line'}`}>
-                  <img src={image} alt="" className="h-full w-full rounded-lg object-cover" />
+                <button key={image} onClick={() => setActiveImage(index)} className={`grid size-14 shrink-0 place-items-center rounded-xl border bg-[#fbf4d7] p-1 transition sm:size-20 ${activeImage === index ? 'border-primary ring-1 ring-primary' : 'border-line'}`}>
+                  <img src={image} alt="" onError={handleImageError} className="h-full w-full rounded-lg object-cover" />
                 </button>
               ))}
             </div>
-            <button onClick={() => setActiveImage((value) => (value + 1) % gallery.length)} className="absolute right-0 grid size-11 place-items-center rounded-full bg-white shadow-float ring-1 ring-line">
-              <ChevronRight size={24} />
+            <button onClick={() => setActiveImage((value) => (value + 1) % gallery.length)} className="absolute right-0 grid size-9 place-items-center rounded-full bg-white shadow-float ring-1 ring-line sm:size-11">
+              <ChevronRight size={21} />
             </button>
           </div>
-          <div className="mt-10">
-          <h2 className="font-display text-lg font-extrabold text-ink">Product Details</h2>
+          <div className="mt-7 sm:mt-10">
+          <h2 className="font-display text-base font-extrabold text-ink sm:text-lg">Product Details</h2>
             <div className="mt-4 grid gap-3 text-[13px]">
               <div><span className="font-bold">Type</span><p className="mt-1 text-muted capitalize">{product.category}</p></div>
               <div><span className="font-bold">Description</span><p className="mt-1 max-w-xl leading-6 text-muted">{product.description}</p></div>
@@ -639,45 +690,45 @@ function ProductDetailPage() {
           </div>
         </div>
 
-        <div className="pt-8 lg:px-12 lg:pt-12">
-          <div className="text-[13px] font-semibold text-muted">Home / {product.category} / <span className="text-ink">{product.name}</span></div>
-          <h1 className="mt-4 max-w-2xl font-display text-xl font-extrabold leading-tight text-ink md:text-2xl">{product.name}</h1>
-          <div className="mt-6 text-sm font-bold text-ink">Select Unit</div>
-          <div className="mt-5 flex flex-wrap gap-3">
+        <div className="pt-6 lg:px-12 lg:pt-12">
+          <div className="line-clamp-1 text-xs font-semibold text-muted sm:text-[13px]">Home / {product.category} / <span className="text-ink">{product.name}</span></div>
+          <h1 className="mt-3 max-w-2xl font-display text-lg font-extrabold leading-tight text-ink sm:mt-4 sm:text-xl md:text-2xl">{product.name}</h1>
+          <div className="mt-5 text-sm font-bold text-ink sm:mt-6">Select Unit</div>
+          <div className="mt-3 flex flex-wrap gap-2 sm:mt-5 sm:gap-3">
             {[product.unit, product.unit.includes('kg') ? '1 kg' : '150 g'].map((option, index) => (
-              <button key={option} onClick={() => setUnit(option)} className={`min-w-24 rounded-xl border px-3 py-4 text-left transition ${unit === option ? 'border-primary bg-primary/5' : 'border-line bg-bg'}`}>
+              <button key={option} onClick={() => setUnit(option)} className={`min-w-24 rounded-xl border px-3 py-3 text-left transition sm:py-4 ${unit === option ? 'border-primary bg-primary/5' : 'border-line bg-bg'}`}>
                 <div className="text-[13px] font-semibold text-ink">{option}</div>
                 <div className="mt-1 font-mono text-[13px] font-extrabold">{index === 0 ? formatPrice(product.price) : 'Out of stock'}</div>
               </button>
             ))}
           </div>
           <div className="mt-5 text-[13px] font-bold text-muted">{unit}</div>
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-5">
+          <div className="mt-2 flex flex-col gap-4 rounded-2xl bg-white pb-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-5">
             <div>
-              <div className="font-mono text-lg font-extrabold text-ink">{formatPrice(product.price)} <span className="text-[13px] font-medium text-muted">MRP <span className="line-through">{formatPrice(product.mrp)}</span></span></div>
+              <div className="font-mono text-base font-extrabold text-ink sm:text-lg">{formatPrice(product.price)} <span className="text-[12px] font-medium text-muted sm:text-[13px]">MRP <span className="line-through">{formatPrice(product.mrp)}</span></span></div>
               <p className="mt-1 text-xs text-muted">(Inclusive of all taxes)</p>
             </div>
             {item ? (
-              <div className="flex h-14 items-center rounded-lg bg-primary text-white">
+              <div className="flex h-12 w-full items-center justify-center rounded-lg bg-primary text-white sm:h-14 sm:w-auto">
                 <button onClick={() => updateQuantity(product.id, item.qty - 1)} className="px-4"><Minus size={18} /></button>
                 <span className="w-8 text-center font-mono font-bold">{item.qty}</span>
                 <button onClick={() => updateQuantity(product.id, item.qty + 1)} className="px-4"><Plus size={18} /></button>
               </div>
             ) : (
-              <button onClick={() => addToCart(product)} className="h-12 rounded-lg bg-primary px-6 text-base font-extrabold text-white transition hover:bg-primary-dark">Add to cart</button>
+              <button onClick={() => addToCart(product)} className="h-12 w-full rounded-lg bg-primary px-6 text-sm font-extrabold text-white transition hover:bg-primary-dark sm:w-auto sm:text-base">Add to cart</button>
             )}
           </div>
 
-          <div className="mt-16">
-            <h2 className="font-display text-lg font-extrabold text-ink">Why shop from 7Heaven?</h2>
-            <div className="mt-5 space-y-5">
+          <div className="mt-9 sm:mt-16">
+            <h2 className="font-display text-base font-extrabold text-ink sm:text-lg">Why shop from 7Heaven?</h2>
+            <div className="mt-4 space-y-4 sm:mt-5 sm:space-y-5">
               {[
                 ['Round The Clock Delivery', 'Get items delivered to your doorstep from nearby dark stores whenever you need them.'],
                 ['Best Prices & Offers', 'Smart prices, useful bundles, and offers directly from trusted suppliers.'],
                 ['Wide Assortment', 'Choose from daily groceries, personal care, household essentials, snacks and more.'],
               ].map(([title, copy], index) => (
-                <div key={title} className="flex gap-4">
-                  <div className="grid size-14 shrink-0 place-items-center rounded-full bg-primary/10 text-primary"><PackageCheck size={24} /></div>
+                <div key={title} className="flex gap-3 sm:gap-4">
+                  <div className="grid size-11 shrink-0 place-items-center rounded-full bg-primary/10 text-primary sm:size-14"><PackageCheck size={22} /></div>
                   <div><h3 className="text-sm font-bold text-ink">{title}</h3><p className="mt-1 max-w-xl text-[13px] leading-5 text-muted">{copy}</p></div>
                 </div>
               ))}
@@ -697,12 +748,13 @@ function CartDrawer() {
   const navigate = useNavigate();
   const [loginOpen, setLoginOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [addressOpen, setAddressOpen] = useState(false);
   const [user, setUser] = useState(() => {
     try { return JSON.parse(localStorage.getItem('sevenHeavenUser') || 'null'); } catch { return null; }
   });
-  const savedAddress = (() => {
+  const [savedAddress, setSavedAddress] = useState(() => {
     try { return JSON.parse(localStorage.getItem('sevenHeavenAddress') || 'null'); } catch { return null; }
-  })();
+  });
   const mrpTotal = cartItems.reduce((sum, item) => sum + item.mrp * item.qty, 0);
   const savings = Math.max(0, mrpTotal - subtotal + discount);
   const handlingFee = cartItems.length > 0 ? 2 : 0;
@@ -718,8 +770,7 @@ function CartDrawer() {
       setPaymentOpen(true);
       return;
     }
-    setCartOpen(false);
-    navigate('/checkout');
+    setAddressOpen(true);
   };
   const handleCartLogin = (mobile) => {
     const nextUser = { mobile };
@@ -731,8 +782,13 @@ function CartDrawer() {
       setPaymentOpen(true);
       return;
     }
-    setCartOpen(false);
-    navigate('/checkout');
+    setAddressOpen(true);
+  };
+  const saveCartAddress = (nextAddress) => {
+    localStorage.setItem('sevenHeavenAddress', JSON.stringify(nextAddress));
+    setSavedAddress(nextAddress);
+    setAddressOpen(false);
+    setPaymentOpen(true);
   };
   const placeCartOrder = (method) => {
     const order = {
@@ -790,7 +846,7 @@ function CartDrawer() {
                     <div className="divide-y divide-line">
                       {cartItems.map((item) => (
                         <div key={item.id} className="flex items-center gap-3 px-4 py-3">
-                          <img src={item.image} alt="" className="size-20 shrink-0 rounded-xl border border-line object-cover" />
+                          <img src={item.image || imageFallback} alt="" onError={handleImageError} className="size-20 shrink-0 rounded-xl border border-line object-cover" />
                           <div className="min-w-0 flex-1">
                             <h3 className="line-clamp-2 text-sm font-medium leading-5 text-ink">{item.name}</h3>
                             <p className="mt-1 text-sm text-muted">{item.unit}</p>
@@ -829,7 +885,7 @@ function CartDrawer() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-3">
                           <h3 className="text-sm font-extrabold text-ink">Delivering to {savedAddress.label || 'Home'}</h3>
-                          <button onClick={() => { setCartOpen(false); navigate('/checkout?changeAddress=1'); }} className="text-xs font-extrabold text-green-700">Change</button>
+                          <button onClick={() => setAddressOpen(true)} className="text-xs font-extrabold text-green-700">Change</button>
                         </div>
                         <p className="mt-1 truncate text-xs text-muted">{savedAddress.line}, {savedAddress.city}</p>
                       </div>
@@ -845,7 +901,12 @@ function CartDrawer() {
             </motion.aside>
             {paymentOpen && savedAddress && (
               <motion.aside initial={{ x: 36, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 36, opacity: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }} className="fixed right-0 top-0 z-[60] h-full w-full max-w-md overflow-auto bg-[#eef1f7] shadow-float">
-                <PaymentOptionsScreen total={total} address={savedAddress} onBack={() => setPaymentOpen(false)} onChangeAddress={() => { setPaymentOpen(false); setCartOpen(false); navigate('/checkout?changeAddress=1'); }} onPlaceOrder={placeCartOrder} />
+                <PaymentOptionsScreen total={total} address={savedAddress} onBack={() => setPaymentOpen(false)} onChangeAddress={() => setAddressOpen(true)} onPlaceOrder={placeCartOrder} />
+              </motion.aside>
+            )}
+            {addressOpen && (
+              <motion.aside initial={{ x: 36, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 36, opacity: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }} className="fixed right-0 top-0 z-[70] h-full w-full max-w-md overflow-auto bg-white shadow-float">
+                <DeliveryAddressForm address={savedAddress} onBack={() => setAddressOpen(false)} onSave={saveCartAddress} />
               </motion.aside>
             )}
           </>
@@ -1031,7 +1092,7 @@ function CheckoutPage() {
   );
 }
 
-function DeliveryAddressForm({ address, onSave }) {
+function DeliveryAddressForm({ address, onBack, onSave }) {
   const [form, setForm] = useState(address || { label: 'Home', name: '', phone: '', line: '', area: '', landmark: '', pincode: '', city: 'Patna' });
   const setField = (key, value) => setForm((current) => ({ ...current, [key]: value }));
   const save = (event) => {
@@ -1041,7 +1102,11 @@ function DeliveryAddressForm({ address, onSave }) {
   return (
     <form onSubmit={save} className="min-h-[calc(100vh-73px)] bg-white">
       <div className="flex items-center gap-3 border-b border-line px-4 py-4">
-        <Link to="/" className="grid size-9 place-items-center"><ArrowLeft size={22} /></Link>
+        {onBack ? (
+          <button type="button" onClick={onBack} className="grid size-9 place-items-center"><ArrowLeft size={22} /></button>
+        ) : (
+          <Link to="/" className="grid size-9 place-items-center"><ArrowLeft size={22} /></Link>
+        )}
         <div><h1 className="font-display text-lg font-extrabold">Delivery Address</h1><p className="text-xs text-muted">Set your default delivery location</p></div>
       </div>
       <div className="space-y-3 p-4">
@@ -1315,8 +1380,14 @@ function AnalyticsPage() {
 }
 
 function ProductsPage() {
+  const location = useLocation();
   const { products } = useAdmin();
-  return <motion.main variants={page} initial="initial" animate="animate" exit="exit"><ProductGrid products={products} title="Product Listing" /></motion.main>;
+  const query = new URLSearchParams(location.search).get('q') || '';
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredProducts = normalizedQuery
+    ? products.filter((product) => [product.name, product.category, product.description, product.unit].some((value) => String(value || '').toLowerCase().includes(normalizedQuery)))
+    : products;
+  return <motion.main variants={page} initial="initial" animate="animate" exit="exit"><ProductGrid products={filteredProducts} title={query ? `Search results for "${query}"` : 'Product Listing'} /></motion.main>;
 }
 
 function OrderHistoryPage() {
@@ -1432,20 +1503,22 @@ function AccountPage() {
 
   return (
     <motion.main variants={page} initial="initial" animate="animate" exit="exit" className="bg-white">
-      <section className="mx-auto grid h-[calc(100vh-73px)] max-w-7xl overflow-hidden border-x border-line shadow-card lg:grid-cols-[300px_1fr]">
-        <aside className="h-full overflow-hidden border-r border-line bg-white">
-          <div className="border-b border-line px-16 py-10 text-xs text-[#4b5565]">+91{user.mobile}</div>
-          {menu.map(([key, label, Icon]) => (
-            <Link key={key} to={`/account?tab=${key}`} className={`flex w-full items-center gap-4 border-b border-line px-6 py-4 text-left text-sm font-medium transition ${activeTab === key ? 'bg-orange-50 text-primary' : 'text-[#566074] hover:bg-bg'}`}>
-              <Icon size={18} /> {label}
-            </Link>
-          ))}
-          <button onClick={() => { localStorage.removeItem('sevenHeavenUser'); navigate('/'); }} className="flex w-full items-center gap-4 border-b border-line px-6 py-4 text-left text-sm font-medium text-[#566074] hover:bg-bg">
+      <section className="mx-auto min-h-[calc(100vh-73px)] max-w-7xl border-x border-line shadow-card lg:grid lg:h-[calc(100vh-73px)] lg:grid-cols-[300px_1fr] lg:overflow-hidden">
+        <aside className="border-b border-line bg-white lg:h-full lg:overflow-hidden lg:border-b-0 lg:border-r">
+          <div className="hidden border-b border-line px-16 py-10 text-xs text-[#4b5565] lg:block">+91{user.mobile}</div>
+          <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 py-3 lg:block lg:gap-0 lg:overflow-visible lg:p-0">
+            {menu.map(([key, label, Icon]) => (
+              <Link key={key} to={`/account?tab=${key}`} className={`flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-xs font-medium transition lg:w-full lg:rounded-none lg:border-x-0 lg:border-t-0 lg:border-b lg:border-line lg:px-6 lg:py-4 lg:text-sm ${activeTab === key ? 'border-primary bg-orange-50 text-primary lg:border-line' : 'border-line text-[#566074] hover:bg-bg'}`}>
+                <Icon size={16} className="shrink-0 lg:size-[18px]" /> <span className="whitespace-nowrap">{label}</span>
+              </Link>
+            ))}
+          </div>
+          <button onClick={() => { localStorage.removeItem('sevenHeavenUser'); navigate('/'); }} className="hidden w-full items-center gap-4 border-b border-line px-6 py-4 text-left text-sm font-medium text-[#566074] hover:bg-bg lg:flex">
             <User size={18} /> Logout
           </button>
         </aside>
-        <section className="h-full overflow-y-auto px-8 py-8 lg:px-12">
-          <button onClick={() => navigate(-1)} className="grid size-12 place-items-center rounded-xl border border-line text-ink hover:bg-bg"><ArrowLeft size={22} /></button>
+        <section className="min-h-0 px-4 py-5 sm:px-6 lg:h-full lg:overflow-y-auto lg:px-12 lg:py-8">
+          <button onClick={() => navigate(-1)} className="hidden size-12 place-items-center rounded-xl border border-line text-ink hover:bg-bg lg:grid"><ArrowLeft size={22} /></button>
           {activeTab === 'orders' && <AccountOrders orders={savedOrders} orderItems={orderItems} mrp={mrp} handling={handling} gst={gst} total={total} />}
           {activeTab === 'addresses' && <AccountAddresses />}
           {activeTab === 'prescriptions' && <UnavailableSection title="My Prescriptions" copy="Prescription uploads are not available in this demo yet." />}
