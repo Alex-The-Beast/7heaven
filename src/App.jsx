@@ -211,7 +211,7 @@ function AccountDropdown({ open, user, onClose, onLogout }) {
   return (
     <AnimatePresence>
       {open && (
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute right-0 top-[calc(100%+12px)] z-50 w-72 rounded-sm bg-white py-5 shadow-float ring-1 ring-line">
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute left-0 top-[calc(100%+12px)] z-50 w-72 rounded-sm bg-white py-5 shadow-float ring-1 ring-line sm:left-auto sm:right-0">
           <div className="px-5 pb-4">
             <h3 className="font-display text-lg font-extrabold text-[#4b5565]">My Account</h3>
             <p className="mt-1 text-sm text-[#4b5565]">{user.mobile}</p>
@@ -378,7 +378,7 @@ function ProductCard({ product }) {
           <p className="mt-1 line-clamp-2 text-xs text-muted">{product.description}</p>
         </Link>
         <div className="mt-4 flex items-end justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <div className="font-mono text-lg font-bold text-ink">{formatPrice(product.price)}</div>
             <div className="font-mono text-xs text-muted line-through">{formatPrice(product.mrp)}</div>
           </div>
@@ -515,33 +515,38 @@ function CategoryListingCard({ product }) {
   const { cartItems, addToCart, updateQuantity } = useCart();
   const item = cartItems.find((entry) => entry.id === product.id);
   return (
-    <article className="group min-w-0">
-      <Link to={`/product/${product.id}`} className="relative grid h-32 place-items-center overflow-hidden rounded-xl border border-line bg-white p-3 transition group-hover:shadow-card sm:h-44 sm:p-4">
-        {product.discount > 10 && <span className="absolute left-2 top-0 rounded-b-md bg-blue-600 px-1.5 py-1 text-[9px] font-extrabold leading-3 text-white sm:left-3 sm:px-2 sm:text-[10px]">{product.discount}%<br />OFF</span>}
-          <img src={product.image || imageFallback} alt={product.name} onError={handleImageError} className="max-h-24 w-auto max-w-[78%] object-contain transition duration-300 group-hover:scale-105 sm:max-h-36 sm:max-w-[86%]" />
+    <article className="group grid min-w-0 grid-cols-[104px_1fr] gap-3 rounded-xl border border-line bg-white p-2 shadow-[0_1px_8px_rgba(16,24,40,0.06)] transition hover:shadow-card sm:flex sm:min-h-0 sm:flex-col sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
+      <Link to={`/product/${product.id}`} className="relative grid h-28 place-items-center overflow-hidden rounded-lg bg-white transition sm:h-44 sm:rounded-xl sm:border sm:border-line sm:p-4 sm:group-hover:shadow-card">
+        {product.discount > 10 && <span className="absolute left-2 top-0 hidden rounded-b-md bg-blue-600 px-1.5 py-1 text-[9px] font-extrabold leading-3 text-white sm:block sm:left-3 sm:px-2 sm:text-[10px]">{product.discount}%<br />OFF</span>}
+          <img src={product.image || imageFallback} alt={product.name} onError={handleImageError} className="max-h-24 w-full object-contain transition duration-300 group-hover:scale-105 sm:max-h-36 sm:max-w-[86%]" />
       </Link>
-      <div className="mt-2 flex items-start justify-between gap-2 sm:mt-3 sm:gap-3">
+      <div className="min-w-0">
+      <Link to={`/product/${product.id}`} className="block sm:mt-2">
+        <div className="inline-flex w-max items-center gap-1 rounded-md bg-bg px-1.5 py-1 text-[10px] font-bold text-ink sm:hidden">
+          <Clock size={11} className="text-primary" /> 12 MINS
+        </div>
+        <h3 className="mt-2 min-h-10 text-sm font-bold leading-5 text-ink line-clamp-2 hover:text-primary sm:min-h-10">{product.name}</h3>
+        <p className="mt-2 text-sm font-medium text-muted sm:mt-1">1 pack ({product.unit})</p>
+        <span className="mt-2 hidden bg-cyan-50 px-2 py-0.5 text-xs font-semibold text-cyan-700 sm:inline-block">{product.category === 'grains' ? 'High Fiber' : 'Fresh Pick'}</span>
+        <div className="mt-2 hidden items-center gap-1 text-xs font-semibold text-green-700 sm:flex"><Star size={13} className="fill-green-600 text-green-600" /> {product.rating} ({product.ratingCount})</div>
+      </Link>
+      <div className="mt-3 flex items-end justify-between gap-2 sm:mt-3 sm:items-start sm:pt-0">
         <div className="min-w-0">
-          <div className="inline-flex rounded-md bg-primary px-1.5 py-1 font-mono text-sm font-extrabold text-white sm:px-2 sm:text-base">{formatPrice(product.price)}</div>
-          <span className="ml-1 font-mono text-xs text-muted line-through sm:ml-2 sm:text-sm">{formatPrice(product.mrp)}</span>
-          <div className="mt-1 text-[11px] font-bold text-green-700 sm:text-xs sm:font-extrabold">Rs {Math.max(0, product.mrp - product.price)} OFF</div>
+          <div className="font-mono text-sm font-extrabold text-ink sm:inline-flex sm:rounded-md sm:bg-primary sm:px-2 sm:py-1 sm:text-base sm:text-white">{formatPrice(product.price)}</div>
+          <span className="hidden font-mono text-xs text-muted line-through sm:ml-2 sm:inline sm:text-sm">{formatPrice(product.mrp)}</span>
+          <div className="hidden text-xs font-extrabold text-green-700 sm:mt-1 sm:block">Rs {Math.max(0, product.mrp - product.price)} OFF</div>
         </div>
         {item ? (
-          <div className="flex h-8 shrink-0 items-center rounded-lg bg-primary text-white sm:h-10">
+          <div className="flex h-9 shrink-0 items-center rounded-lg bg-primary text-white sm:h-10">
             <button onClick={() => updateQuantity(product.id, item.qty - 1)} className="px-2"><Minus size={14} /></button>
-            <span className="w-5 text-center font-mono text-xs font-bold sm:w-6 sm:text-sm">{item.qty}</span>
+            <span className="w-6 text-center font-mono text-sm font-bold">{item.qty}</span>
             <button onClick={() => updateQuantity(product.id, item.qty + 1)} className="px-2"><Plus size={14} /></button>
           </div>
         ) : (
-          <button onClick={() => addToCart(product)} disabled={product.stock <= 0} className="h-8 shrink-0 rounded-lg border border-pink-500 bg-white px-3 text-xs font-extrabold text-pink-600 transition hover:bg-pink-50 disabled:border-gray-300 disabled:text-gray-400 sm:h-10 sm:px-4 sm:text-sm">ADD</button>
+          <button onClick={() => addToCart(product)} disabled={product.stock <= 0} className="h-9 min-w-16 shrink-0 rounded-lg border border-primary bg-white px-3 text-sm font-extrabold text-primary transition hover:bg-primary hover:text-white disabled:border-gray-300 disabled:text-gray-400 sm:h-10 sm:min-w-20 sm:border-pink-500 sm:px-4 sm:text-pink-600 sm:hover:bg-pink-50 sm:hover:text-pink-600">ADD</button>
         )}
       </div>
-      <Link to={`/product/${product.id}`} className="mt-3 block">
-        <h3 className="min-h-9 text-xs font-bold leading-4 text-ink line-clamp-2 hover:text-primary sm:min-h-10 sm:text-sm sm:leading-5">{product.name}</h3>
-        <p className="mt-1 text-xs text-muted sm:text-sm">1 pack ({product.unit})</p>
-        <span className="mt-2 inline-block bg-cyan-50 px-2 py-0.5 text-[10px] font-semibold text-cyan-700 sm:text-xs">{product.category === 'grains' ? 'High Fiber' : 'Fresh Pick'}</span>
-        <div className="mt-2 flex items-center gap-1 text-xs font-semibold text-green-700"><Star size={13} className="fill-green-600 text-green-600" /> {product.rating} ({product.ratingCount})</div>
-      </Link>
+      </div>
     </article>
   );
 }
@@ -562,8 +567,8 @@ function CategoryListingPage() {
   }, [category]);
 
   return (
-    <motion.main variants={page} initial="initial" animate="animate" exit="exit" className="bg-white">
-      <section className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
+    <motion.main variants={page} initial="initial" animate="animate" exit="exit" className="overflow-x-hidden bg-white">
+      <section className="mx-auto max-w-7xl px-2 py-4 sm:px-6 sm:py-5 lg:px-8">
         <div className="mb-5 flex min-w-0 items-center gap-2 overflow-hidden text-xs font-medium text-muted sm:mb-7 sm:gap-3 sm:text-sm">
           <Link to="/" className="shrink-0 text-[#33415c] hover:text-primary">Home</Link>
           <ChevronRight size={16} />
@@ -587,7 +592,7 @@ function CategoryListingPage() {
             </div>
           </aside>
           <div>
-            <div className="no-scrollbar -mx-4 mb-4 flex gap-2 overflow-x-auto px-4 lg:hidden">
+            <div className="no-scrollbar -mx-2 mb-4 flex gap-2 overflow-x-auto px-2 lg:hidden">
               {megaCategories.slice(1, 18).map((item) => (
                 <button
                   key={`mobile-${item.label}-${item.category}`}
@@ -602,7 +607,7 @@ function CategoryListingPage() {
             <h1 className="font-display text-xl font-extrabold tracking-tight text-ink sm:text-2xl md:text-3xl">
               Buy {active === 'grains' ? 'Millets & Other Flours' : activeMeta?.label} Online
             </h1>
-            <div className="no-scrollbar mt-5 flex gap-2 overflow-x-auto pb-1">
+            <div className="no-scrollbar -mx-2 mt-5 flex max-w-[100vw] gap-2 overflow-x-auto overscroll-x-contain px-2 pb-2">
               <button className="grid size-11 shrink-0 place-items-center rounded-lg border border-line bg-white shadow-sm"><SlidersHorizontal size={19} /></button>
               {chips.map((chip) => (
                 <button key={chip} className="flex shrink-0 items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-bold text-[#4f5870] shadow-sm">
@@ -610,7 +615,7 @@ function CategoryListingPage() {
                 </button>
               ))}
             </div>
-            <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-7 sm:mt-8 sm:gap-x-5 sm:gap-y-9 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+            <div className="mt-4 grid grid-cols-1 gap-2 sm:mt-8 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-9 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               {products.map((product) => <CategoryListingCard key={product.id} product={product} />)}
             </div>
           </div>
@@ -663,6 +668,13 @@ function ProductDetailPage() {
 
   return (
     <motion.main variants={page} initial="initial" animate="animate" exit="exit">
+      <nav className="mx-auto flex max-w-7xl items-center gap-2 overflow-hidden px-4 pt-4 text-xs font-medium text-muted sm:px-6 sm:text-sm" aria-label="Product breadcrumb">
+        <Link to="/" className="shrink-0 text-[#33415c] hover:text-primary">Home</Link>
+        <ChevronRight size={15} className="shrink-0" />
+        <Link to={`/category/${product.category}`} className="shrink-0 capitalize text-[#33415c] hover:text-primary">{product.category}</Link>
+        <ChevronRight size={15} className="shrink-0" />
+        <span className="truncate font-semibold text-ink">{product.name}</span>
+      </nav>
       <section className="mx-auto grid max-w-7xl border-b border-line px-4 py-4 sm:py-8 lg:grid-cols-[1.03fr_1fr] lg:px-6">
         <div className="border-line lg:border-r lg:pr-10">
           <div className="grid min-h-[260px] place-items-center rounded-2xl bg-[#fbf4d7] p-5 sm:min-h-[420px] sm:p-8 md:min-h-[560px]">
@@ -691,7 +703,6 @@ function ProductDetailPage() {
         </div>
 
         <div className="pt-6 lg:px-12 lg:pt-12">
-          <div className="line-clamp-1 text-xs font-semibold text-muted sm:text-[13px]">Home / {product.category} / <span className="text-ink">{product.name}</span></div>
           <h1 className="mt-3 max-w-2xl font-display text-lg font-extrabold leading-tight text-ink sm:mt-4 sm:text-xl md:text-2xl">{product.name}</h1>
           <div className="mt-5 text-sm font-bold text-ink sm:mt-6">Select Unit</div>
           <div className="mt-3 flex flex-wrap gap-2 sm:mt-5 sm:gap-3">
@@ -1594,13 +1605,27 @@ function AccountOrders({ orders = [], orderItems, mrp, handling, gst, total }) {
 }
 
 function AccountAddresses() {
-  const savedAddress = (() => {
+  const [showForm, setShowForm] = useState(false);
+  const [savedAddress, setSavedAddress] = useState(() => {
     try { return JSON.parse(localStorage.getItem('sevenHeavenAddress') || 'null'); } catch { return null; }
-  })();
+  });
   const addresses = savedAddress ? [savedAddress] : [
     { label: 'Home', line: 'Boring Road, Patna, Bihar 800001', note: 'Default delivery address' },
     { label: 'Office', line: 'Fraser Road, Patna, Bihar 800001', note: 'Available 10 AM - 7 PM' },
   ];
+  const saveAddress = (nextAddress) => {
+    const normalizedAddress = { ...nextAddress, note: 'Default delivery address' };
+    localStorage.setItem('sevenHeavenAddress', JSON.stringify(normalizedAddress));
+    setSavedAddress(normalizedAddress);
+    setShowForm(false);
+  };
+  if (showForm) {
+    return (
+      <div className="mt-7 max-w-md overflow-hidden rounded-2xl border border-line bg-white">
+        <DeliveryAddressForm address={savedAddress} onBack={() => setShowForm(false)} onSave={saveAddress} />
+      </div>
+    );
+  }
   return (
     <div className="mt-7 max-w-3xl">
       <h1 className="font-display text-xl font-extrabold text-ink">My Addresses</h1>
@@ -1618,7 +1643,7 @@ function AccountAddresses() {
           </div>
         ))}
       </div>
-      <button className="mt-5 rounded-xl border border-primary px-5 py-3 text-sm font-extrabold text-primary">Add New Address</button>
+      <button onClick={() => setShowForm(true)} className="mt-5 rounded-xl border border-primary px-5 py-3 text-sm font-extrabold text-primary">{savedAddress ? 'Change Address' : 'Add New Address'}</button>
     </div>
   );
 }
@@ -1651,34 +1676,69 @@ function FaqSection() {
 
 function SiteFooter() {
   const footerLinks = [
-    { title: 'Shop', links: ['Fresh vegetables', 'Dairy essentials', 'Snacks & drinks', 'Household care'] },
-    { title: '7Heaven', links: ['About us', 'Delivery promise', 'Partner stores', 'Careers'] },
-    { title: 'Support', links: ['Help center', 'Track order', 'Returns', 'Contact'] },
+    { title: 'Vegetables & Fruits', links: ['Fresh vegetables', 'Fresh fruits', 'Herbs & seasonings', 'Cuts & sprouts', 'Organic picks'] },
+    { title: 'Dairy & Breakfast', links: ['Milk', 'Bread & buns', 'Eggs', 'Butter & cheese', 'Curd & paneer'] },
+    { title: 'Pantry Staples', links: ['Atta & flour', 'Rice & grains', 'Dal & pulses', 'Edible oils', 'Masala & spices'] },
+    { title: 'Snacks & Drinks', links: ['Chips & namkeen', 'Biscuits & cookies', 'Cold drinks', 'Juices', 'Tea & coffee'] },
+  ];
+  const usefulLinks = [
+    { title: '7Heaven', links: ['About us', 'Delivery promise', 'Partner stores', 'Careers', 'Press'] },
+    { title: 'Support', links: ['Help center', 'Track order', 'Returns & refunds', 'Cancellation policy', 'Contact us'] },
+  ];
+  const payments = [
+    { label: 'UPI', mark: 'UPI', className: 'text-[#087c42]' },
+    { label: 'Visa', mark: 'VISA', className: 'text-[#1a2f8f]' },
+    { label: 'Mastercard', mark: 'MC', className: 'text-[#eb001b]' },
+    { label: 'RuPay', mark: 'RuPay', className: 'text-[#0b7fab]' },
+    { label: 'Cash on Delivery', mark: 'COD', className: 'text-ink' },
   ];
 
   return (
     <footer className="border-t border-line bg-white">
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="grid gap-9 md:grid-cols-[1.25fr_2fr]">
+        <div className="grid gap-3 border-b border-line pb-8 sm:grid-cols-3">
+          {[
+            [Truck, 'Superfast delivery', 'Daily essentials delivered in minutes across active service areas.'],
+            [ShoppingBasket, 'Wide assortment', 'Groceries, snacks, personal care, household items and more.'],
+            [CreditCard, 'Easy payments', 'Pay by UPI, cards, wallets, net banking or cash on delivery.'],
+          ].map(([Icon, title, copy]) => (
+            <div key={title} className="flex gap-3 rounded-2xl bg-bg p-4">
+              <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-white text-primary shadow-sm"><Icon size={21} /></div>
+              <div>
+                <h3 className="text-sm font-semibold text-ink">{title}</h3>
+                <p className="mt-1 text-xs leading-5 text-muted">{copy}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="grid gap-9 py-9 lg:grid-cols-[1.05fr_2fr]">
           <div>
             <Link to="/" className="brand-logo" aria-label="7Heaven home">
               <span className="brand-logo-mark">7</span>
               <span className="brand-logo-text">Heaven</span>
             </Link>
             <p className="mt-4 max-w-sm text-sm leading-6 text-muted">
-              Daily groceries, fresh staples, and home essentials delivered with a clean, fast shopping experience.
+              Fresh groceries, daily staples, snacks, drinks, personal care and household essentials delivered with a fast, polished shopping experience.
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
-              {['15 min delivery', 'Fresh picks', 'Secure checkout'].map((item) => (
+              {['15 min delivery', 'Fresh picks', '30,000+ items', 'Secure checkout'].map((item) => (
                 <span key={item} className="rounded-full border border-line bg-bg px-3 py-1.5 text-xs font-medium text-[#4b5565]">{item}</span>
               ))}
             </div>
+            <div className="mt-6">
+              <h3 className="text-sm font-semibold text-ink">Download app</h3>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {['App Store', 'Google Play'].map((store) => (
+                  <a key={store} href="#top" className="rounded-xl bg-ink px-4 py-2 text-xs font-semibold text-white transition hover:bg-primary">{store}</a>
+                ))}
+              </div>
+            </div>
           </div>
-          <div className="grid gap-7 sm:grid-cols-3">
+          <div className="grid gap-7 sm:grid-cols-2 xl:grid-cols-4">
             {footerLinks.map((section) => (
               <div key={section.title}>
                 <h3 className="text-sm font-semibold text-ink">{section.title}</h3>
-                <div className="mt-3 grid gap-2.5">
+                <div className="mt-3 grid gap-2">
                   {section.links.map((link) => (
                     <a key={link} href="#top" className="text-sm text-muted transition hover:text-primary">{link}</a>
                   ))}
@@ -1687,12 +1747,39 @@ function SiteFooter() {
             ))}
           </div>
         </div>
-        <div className="mt-9 flex flex-col gap-3 border-t border-line pt-5 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
+        <div className="border-t border-line py-8">
+          <div className="grid gap-7 sm:grid-cols-2">
+            {usefulLinks.map((section) => (
+              <div key={section.title}>
+                <h3 className="text-sm font-semibold text-ink">{section.title}</h3>
+                <div className="mt-3 grid gap-2">
+                  {section.links.map((link) => (
+                    <a key={link} href="#top" className="text-sm text-muted transition hover:text-primary">{link}</a>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-col gap-5 border-t border-line pt-6 text-xs text-muted lg:flex-row lg:items-center lg:justify-between">
           <p>© 2026 7Heaven Grocery. Demo storefront for quick commerce.</p>
-          <div className="flex gap-4">
+          <div className="mt-2 flex flex-wrap gap-4">
             <a href="#top" className="hover:text-primary">Privacy</a>
             <a href="#top" className="hover:text-primary">Terms</a>
             <a href="#top" className="hover:text-primary">Refund policy</a>
+            <a href="#top" className="hover:text-primary">Responsible disclosure</a>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {payments.map((payment) => (
+              <span key={payment.label} title={payment.label} className="inline-flex h-9 min-w-16 items-center justify-center rounded-lg border border-line bg-white px-3 font-display text-[11px] font-extrabold shadow-sm">
+                <span className={payment.className}>{payment.mark}</span>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            {['in', 'x', 'ig', 'fb'].map((item) => (
+              <a key={item} href="#top" className="grid size-8 place-items-center rounded-full bg-bg font-semibold text-ink transition hover:bg-primary hover:text-white">{item}</a>
+            ))}
           </div>
         </div>
       </div>
