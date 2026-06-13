@@ -211,7 +211,7 @@ function AccountDropdown({ open, user, onClose, onLogout }) {
   return (
     <AnimatePresence>
       {open && (
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute left-0 top-[calc(100%+12px)] z-50 w-72 rounded-sm bg-white py-5 shadow-float ring-1 ring-line sm:left-auto sm:right-0">
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute right-0 top-[calc(100%+12px)] z-50 w-72 rounded-sm bg-white py-5 shadow-float ring-1 ring-line">
           <div className="px-5 pb-4">
             <h3 className="font-display text-lg font-extrabold text-[#4b5565]">My Account</h3>
             <p className="mt-1 text-sm text-[#4b5565]">{user.mobile}</p>
@@ -1774,11 +1774,6 @@ function SiteFooter() {
               <span key={payment.label} title={payment.label} className="inline-flex h-9 min-w-16 items-center justify-center rounded-lg border border-line bg-white px-3 font-display text-[11px] font-extrabold shadow-sm">
                 <span className={payment.className}>{payment.mark}</span>
               </span>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            {['in', 'x', 'ig', 'fb'].map((item) => (
-              <a key={item} href="#top" className="grid size-8 place-items-center rounded-full bg-bg font-semibold text-ink transition hover:bg-primary hover:text-white">{item}</a>
             ))}
           </div>
         </div>
