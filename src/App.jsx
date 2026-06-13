@@ -106,15 +106,15 @@ function Navbar() {
           <input className="h-12 w-full rounded-xl border border-[#dfe3ea] bg-white py-3 pl-12 pr-4 text-sm font-medium text-ink outline-none transition placeholder:text-[#3d4252] focus:border-primary focus:ring-4 focus:ring-primary/10" placeholder='Search for "cheese slices"' />
         </div>
           {user ? (
-            <div className="relative hidden sm:block">
-              <button onClick={() => setAccountOpen((value) => !value)} className="flex min-w-14 flex-col items-center gap-1 text-xs font-semibold text-ink transition" title={user.mobile}>
-                <User size={24} strokeWidth={2.1} />
-                <span>Profile</span>
+            <div className="relative block">
+              <button onClick={() => setAccountOpen((value) => !value)} className="flex min-w-10 flex-col items-center gap-1 text-xs font-semibold text-ink transition sm:min-w-14" title={user.mobile}>
+                <User size={23} strokeWidth={2.1} />
+                <span className="hidden sm:block">Profile</span>
               </button>
               <AccountDropdown open={accountOpen} user={user} onClose={() => setAccountOpen(false)} onLogout={handleLogout} />
             </div>
         ) : (
-          <button onClick={() => setLoginOpen(true)} className="hidden rounded-xl bg-primary px-5 py-3 text-sm font-extrabold text-white transition hover:bg-primary-dark sm:block">
+          <button onClick={() => setLoginOpen(true)} className="rounded-xl bg-primary px-3 py-2.5 text-xs font-bold text-white transition hover:bg-primary-dark sm:px-5 sm:py-3 sm:text-sm sm:font-extrabold">
             Login
           </button>
         )}
@@ -247,7 +247,7 @@ function HeroBanner() {
 }
 
 const megaCategories = [
-  { label: 'Paan Corner', category: 'personal', image: 'https://images.unsplash.com/photo-1607344645866-009c320f8ab8?auto=format&fit=crop&w=320&q=80' },
+  { label: 'Paan Corner', category: 'personal', image: 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?auto=format&fit=crop&w=320&q=80' },
   { label: 'Dairy, Bread & Eggs', category: 'dairy', image: 'https://images.unsplash.com/photo-1589927986089-35812388d1f4?auto=format&fit=crop&w=320&q=80' },
   { label: 'Fruits & Vegetables', category: 'vegetables', image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=320&q=80' },
   { label: 'Cold Drinks & Juices', category: 'beverages', image: 'https://images.unsplash.com/photo-1623065422902-30a2d299bbe4?auto=format&fit=crop&w=320&q=80' },
@@ -278,7 +278,7 @@ function MegaCategoryGrid({ active, setActive }) {
 
   return (
     <section id="mega-categories" className="mx-auto max-w-7xl px-4 py-7 sm:px-6 lg:px-8">
-      <motion.div initial="initial" animate="animate" variants={{ animate: { transition: { staggerChildren: 0.025 } } }} className="grid grid-cols-2 gap-x-4 gap-y-6 rounded-[20px] bg-white px-3 py-6 shadow-card sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-10">
+      <motion.div initial="initial" animate="animate" variants={{ animate: { transition: { staggerChildren: 0.025 } } }} className="no-scrollbar grid grid-flow-col grid-rows-2 auto-cols-[92px] gap-x-4 gap-y-5 overflow-x-auto rounded-[20px] bg-white px-3 py-5 shadow-card sm:grid-flow-row sm:grid-rows-none sm:grid-cols-3 sm:gap-y-6 sm:overflow-visible sm:py-6 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-10">
         {megaCategories.map((item) => (
           <motion.button
             key={item.label}
@@ -692,9 +692,11 @@ function ProductDetailPage() {
 }
 
 function CartDrawer() {
-  const { cartOpen, setCartOpen, cartItems, updateQuantity, subtotal, deliveryFee, discount, total, coupon, setCoupon } = useCart();
+  const { cartOpen, setCartOpen, cartItems, updateQuantity, subtotal, deliveryFee, discount, total, coupon, setCoupon, clearCart, flash } = useCart();
+  const { addOrder } = useAdmin();
   const navigate = useNavigate();
   const [loginOpen, setLoginOpen] = useState(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
   const [user, setUser] = useState(() => {
     try { return JSON.parse(localStorage.getItem('sevenHeavenUser') || 'null'); } catch { return null; }
   });
@@ -712,6 +714,10 @@ function CartDrawer() {
       setLoginOpen(true);
       return;
     }
+    if (savedAddress) {
+      setPaymentOpen(true);
+      return;
+    }
     setCartOpen(false);
     navigate('/checkout');
   };
@@ -721,8 +727,31 @@ function CartDrawer() {
     setUser(nextUser);
     window.dispatchEvent(new Event('sevenHeavenAuthChanged'));
     setLoginOpen(false);
+    if (savedAddress) {
+      setPaymentOpen(true);
+      return;
+    }
     setCartOpen(false);
     navigate('/checkout');
+  };
+  const placeCartOrder = (method) => {
+    const order = {
+      id: `ORD-${Math.floor(9000 + Math.random() * 900)}`,
+      createdAt: new Date().toISOString(),
+      status: 'delivered',
+      payment: method,
+      total,
+      address: savedAddress,
+      items: cartItems.map((item) => ({ id: item.id, name: item.name, image: item.image, unit: item.unit, price: item.price, qty: item.qty })),
+    };
+    const orders = JSON.parse(localStorage.getItem('sevenHeavenOrders') || '[]');
+    localStorage.setItem('sevenHeavenOrders', JSON.stringify([order, ...orders]));
+    addOrder(order);
+    clearCart();
+    flash('Order placed and added to history');
+    setPaymentOpen(false);
+    setCartOpen(false);
+    navigate('/account?tab=orders');
   };
   return (
     <>
@@ -813,10 +842,15 @@ function CartDrawer() {
                 </div>
               </>
             )}
-          </motion.aside>
-        </>
-      )}
-    </AnimatePresence>
+            </motion.aside>
+            {paymentOpen && savedAddress && (
+              <motion.aside initial={{ x: 36, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 36, opacity: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }} className="fixed right-0 top-0 z-[60] h-full w-full max-w-md overflow-auto bg-[#eef1f7] shadow-float">
+                <PaymentOptionsScreen total={total} address={savedAddress} onBack={() => setPaymentOpen(false)} onChangeAddress={() => { setPaymentOpen(false); setCartOpen(false); navigate('/checkout?changeAddress=1'); }} onPlaceOrder={placeCartOrder} />
+              </motion.aside>
+            )}
+          </>
+        )}
+      </AnimatePresence>
     <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} onLogin={handleCartLogin} />
     </>
   );
@@ -1027,13 +1061,17 @@ function DeliveryAddressForm({ address, onSave }) {
   );
 }
 
-function PaymentOptionsScreen({ total, address, onChangeAddress, onPlaceOrder }) {
+function PaymentOptionsScreen({ total, address, onBack, onChangeAddress, onPlaceOrder }) {
   const [moreWallets, setMoreWallets] = useState(false);
   return (
     <section className="min-h-[calc(100vh-73px)] bg-[#eef1f7]">
       <div className="sticky top-0 z-10 bg-white">
         <div className="flex items-center gap-3 border-b border-line px-4 py-3">
-          <Link to="/" className="grid size-8 place-items-center"><ArrowLeft size={22} /></Link>
+          {onBack ? (
+            <button onClick={onBack} className="grid size-8 place-items-center"><ArrowLeft size={22} /></button>
+          ) : (
+            <Link to="/" className="grid size-8 place-items-center"><ArrowLeft size={22} /></Link>
+          )}
           <div className="min-w-0">
             <h1 className="font-display text-lg font-extrabold">Payment Options</h1>
             <p className="truncate text-xs text-muted">{address.label} - {address.line}, {address.area}, {address.city}</p>
